@@ -4,8 +4,9 @@ import numpy as np
 def load_st_dataset(dataset):
     #output B, N, D
     if dataset == 'PEMSD4':
-        data_path = os.path.join('../data/PeMSD4/pems04.npz')
-        data = np.load(data_path)['data'][:, :, 0]  #onley the first dimension, traffic flow data
+        #data_path = os.path.join('../data/PeMSD4/pems04.npz')
+        #data = np.load(data_path)['data'][:, :, 0]  #onley the first dimension, traffic flow data
+        data = np.load('/content/AGCRN/data/Macro/samples.npy')[:,:,0]
     elif dataset == 'PEMSD8':
         data_path = os.path.join('../data/PeMSD8/pems08.npz')
         data = np.load(data_path)['data'][:, :, 0]  #onley the first dimension, traffic flow data
