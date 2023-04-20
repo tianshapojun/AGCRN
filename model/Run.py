@@ -139,13 +139,14 @@ current_time = datetime.now().strftime('%Y%m%d%H%M%S')
 current_dir = os.path.dirname(os.path.realpath(__file__))
 log_dir = os.path.join(current_dir,'experiments', args.dataset, current_time)
 args.log_dir = log_dir
+args.log_dir = os.path.join('/content/gdrive/MyDrive/Models/AGCRN','experiments',current_time)
 
 #start training
 trainer = Trainer(model, loss, optimizer, train_loader, val_loader, test_loader, scaler,
                   args, lr_scheduler=lr_scheduler)
-if args.mode == 'train':
+if args.mode == 'Train':
     trainer.train()
-elif args.mode == 'test':
+elif args.mode == 'Test':
     model.load_state_dict(torch.load('../pre-trained/{}.pth'.format(args.dataset)))
     print("Load saved model")
     trainer.test(model, trainer.args, test_loader, scaler, trainer.logger)
