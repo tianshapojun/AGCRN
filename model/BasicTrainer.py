@@ -73,7 +73,7 @@ class Trainer(object):
             output = self.model(data, target, teacher_forcing_ratio=teacher_forcing_ratio)
             if self.args.real_value:
                 label = self.scaler.inverse_transform(label)
-            loss = self.loss(output.cuda(), label)
+            loss = self.loss(output, label)
             loss.backward()
 
             # add max grad clipping
