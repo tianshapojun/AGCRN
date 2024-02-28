@@ -20,7 +20,7 @@ from lib.TrainInits import print_model_parameters
 Mode = 'Train'
 DEBUG = 'True'
 DATASET = 'SAMPLES'      #PEMSD4 or PEMSD8  or SAMPLES
-DEVICE = 'cuda:0'
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 MODEL = 'AGCRN'
 
 #get configuration
