@@ -1,6 +1,6 @@
-
 import os
 import sys
+import json
 file_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 print(file_dir)
 sys.path.append(file_dir)
@@ -26,10 +26,10 @@ DEVICE = 'cuda:0'
 MODEL = 'AGCRN'
 
 #get configuration
-config_file = './{}_{}.conf'.format(DATASET, MODEL)
+config_file = './config_{}.json'.format(MODEL)
 #print('Read configuration file: %s' % (config_file))
-config = configparser.ConfigParser()
-config.read(config_file)
+with open(config_file, 'r') as f:
+    config = json.loads(f.read())
 
 from lib.metrics import MAE_torch
 def masked_mae_loss(scaler, mask_value):
