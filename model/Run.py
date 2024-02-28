@@ -8,8 +8,6 @@ sys.path.append(file_dir)
 import torch
 import numpy as np
 import torch.nn as nn
-import argparse
-import configparser
 from datetime import datetime
 from model.AGCRN import AGCRN as Network
 from model.BasicTrainer import Trainer
@@ -21,7 +19,7 @@ from lib.TrainInits import print_model_parameters
 #*************************************************************************#
 Mode = 'Train'
 DEBUG = 'True'
-DATASET = 'PEMSD4'      #PEMSD4 or PEMSD8  or SAMPLES
+DATASET = 'SAMPLES'      #PEMSD4 or PEMSD8  or SAMPLES
 DEVICE = 'cuda:0'
 MODEL = 'AGCRN'
 
@@ -41,55 +39,56 @@ def masked_mae_loss(scaler, mask_value):
         return mae
     return loss
 
-#parser
-args = argparse.ArgumentParser(description='arguments')
-args.add_argument('--dataset', default=DATASET, type=str)
-args.add_argument('--mode', default=Mode, type=str)
-args.add_argument('--device', default=DEVICE, type=str, help='indices of GPUs')
-args.add_argument('--debug', default=DEBUG, type=eval)
-args.add_argument('--model', default=MODEL, type=str)
-args.add_argument('--cuda', default=True, type=bool)
-#data
-args.add_argument('--val_ratio', default=config['data']['val_ratio'], type=float)
-args.add_argument('--test_ratio', default=config['data']['test_ratio'], type=float)
-args.add_argument('--lag', default=config['data']['lag'], type=int)
-args.add_argument('--horizon', default=config['data']['horizon'], type=int)
-args.add_argument('--num_nodes', default=config['data']['num_nodes'], type=int)
-args.add_argument('--tod', default=config['data']['tod'], type=eval)
-args.add_argument('--normalizer', default=config['data']['normalizer'], type=str)
-args.add_argument('--column_wise', default=config['data']['column_wise'], type=eval)
-args.add_argument('--default_graph', default=config['data']['default_graph'], type=eval)
-#model
-args.add_argument('--input_dim', default=config['model']['input_dim'], type=int)
-args.add_argument('--output_dim', default=config['model']['output_dim'], type=int)
-args.add_argument('--embed_dim', default=config['model']['embed_dim'], type=int)
-args.add_argument('--rnn_units', default=config['model']['rnn_units'], type=int)
-args.add_argument('--num_layers', default=config['model']['num_layers'], type=int)
-args.add_argument('--cheb_k', default=config['model']['cheb_order'], type=int)
-#train
-args.add_argument('--loss_func', default=config['train']['loss_func'], type=str)
-args.add_argument('--seed', default=config['train']['seed'], type=int)
-args.add_argument('--batch_size', default=config['train']['batch_size'], type=int)
-args.add_argument('--epochs', default=config['train']['epochs'], type=int)
-args.add_argument('--lr_init', default=config['train']['lr_init'], type=float)
-args.add_argument('--lr_decay', default=config['train']['lr_decay'], type=eval)
-args.add_argument('--lr_decay_rate', default=config['train']['lr_decay_rate'], type=float)
-args.add_argument('--lr_decay_step', default=config['train']['lr_decay_step'], type=str)
-args.add_argument('--early_stop', default=config['train']['early_stop'], type=eval)
-args.add_argument('--early_stop_patience', default=config['train']['early_stop_patience'], type=int)
-args.add_argument('--grad_norm', default=config['train']['grad_norm'], type=eval)
-args.add_argument('--max_grad_norm', default=config['train']['max_grad_norm'], type=int)
-args.add_argument('--teacher_forcing', default=False, type=bool)
-#args.add_argument('--tf_decay_steps', default=2000, type=int, help='teacher forcing decay steps')
-args.add_argument('--real_value', default=config['train']['real_value'], type=eval, help = 'use real value for loss calculation')
-#test
-args.add_argument('--mae_thresh', default=config['test']['mae_thresh'], type=eval)
-args.add_argument('--mape_thresh', default=config['test']['mape_thresh'], type=float)
-#log
-args.add_argument('--log_dir', default='./', type=str)
-args.add_argument('--log_step', default=config['log']['log_step'], type=int)
-args.add_argument('--plot', default=config['log']['plot'], type=eval)
-args = args.parse_args()
+class args_AGCRN():
+    def __init__(self,config):
+        #parser
+        self.dataset = DATASET
+        self.mode = Mode
+        self.device = DEVICE
+        self.debug = DEBUG
+        self.model = MODEL
+        self.cuda = True
+        #data
+        self.val_ratio = config['data']['val_ratio']
+        self.test_ratio = config['data']['test_ratio']
+        self.lag = config['data']['lag']
+        self.horizon = config['data']['horizon']
+        self.num_nodes = config['data']['num_nodes']
+        self.tod = config['data']['tod']
+        self.normalizer = config['data']['normalizer']
+        self.column_wise = config['data']['column_wise']
+        self.default_graph = config['data']['default_graph']
+        #model
+        self.input_dim = config['model']['input_dim']
+        self.output_dim = config['model']['output_dim']
+        self.embed_dim = config['model']['embed_dim']
+        self.rnn_units = config['model']['rnn_units']
+        self.num_layers = config['model']['num_layers']
+        self.cheb_k = config['model']['cheb_order']
+        #train
+        self.loss_func = config['train']['loss_func']
+        self.seed = config['train']['seed']
+        self.batch_size = config['train']['batch_size']
+        self.epochs = config['train']['epochs']
+        self.lr_init = config['train']['lr_init']
+        self.lr_decay = config['train']['lr_decay']
+        self.lr_decay_rate = config['train']['lr_decay_rate']
+        self.lr_decay_step = config['train']['lr_decay_step']
+        self.early_stop = config['train']['early_stop']
+        self.early_stop_patience = config['train']['early_stop_patience']
+        self.grad_norm = config['train']['grad_norm']
+        self.max_grad_norm = config['train']['max_grad_norm']
+        self.teacher_forcing = False
+        self.real_value = config['train']['real_value']
+        #test
+        self.mae_thresh = config['test']['mae_thresh']
+        self.mape_thresh = config['test']['mape_thresh']
+        #log
+        self.log_dir = './'
+        self.log_step = config['log']['log_step']
+        self.plot = config['log']['plot']
+args = args_AGCRN(config)
+
 init_seed(args.seed)
 if torch.cuda.is_available():
     torch.cuda.set_device(int(args.device[5]))
