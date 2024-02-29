@@ -36,14 +36,14 @@ def init_lr_scheduler(optim, opt):
     return torch.optim.lr_scheduler.MultiStepLR(optimizer=optim, milestones=opt.lr_decay_steps,
                                                 gamma = opt.lr_scheduler_rate)
 
-def print_model_parameters(model, only_num = True):
-    print('*****************Model Parameter*****************')
+def print_model_parameters(model, logger, only_num = True):
+    logger.info('*****************Model Parameter*****************')
     if not only_num:
         for name, param in model.named_parameters():
-            print(name, param.shape, param.requires_grad)
+            logger.info(name, param.shape, param.requires_grad)
     total_num = sum([param.nelement() for param in model.parameters()])
-    print('Total params num: {}'.format(total_num))
-    print('*****************Finish Parameter****************')
+    logger.info('Total params num: {}'.format(total_num))
+    logger.info('*****************Finish Parameter****************')
 
 def get_memory_usage(device):
     allocated_memory = torch.cuda.memory_allocated(device) / (1024*1024.)

@@ -9,7 +9,7 @@ from lib.metrics import All_Metrics
 
 class Trainer(object):
     def __init__(self, model, loss, optimizer, train_loader, val_loader, test_loader,
-                 scaler, args, lr_scheduler=None):
+                 scaler, args, logger, lr_scheduler=None):
         super(Trainer, self).__init__()
         self.model = model
         self.loss = loss
@@ -23,17 +23,10 @@ class Trainer(object):
         self.train_per_epoch = len(train_loader)
         if val_loader != None:
             self.val_per_epoch = len(val_loader)
-        self.best_path = os.path.join(self.args.log_dir, 'best_model.pth')
-        self.loss_figure_path = os.path.join(self.args.log_dir, 'loss.png')
+        self.best_path = os.path.join(self.args.save_dir,'AGCRN.pth')
+        #self.loss_figure_path = os.path.join(self.args.log_dir, 'loss.png')
         #log
-        if os.path.isdir(args.log_dir) == False and not args.debug:
-            os.makedirs(args.log_dir, exist_ok=True)
-        self.logger = get_logger(args.log_dir, name=args.model, debug=args.debug)
-        self.logger.info('Experiment log path in: {}'.format(args.log_dir))
-        #if not args.debug:
-        #self.logger.info("Argument: %r", args)
-        # for arg, value in sorted(vars(args).items()):
-        #     self.logger.info("Argument %s: %r", arg, value)
+        self.logger = logger
 
     def val_epoch(self, epoch, val_dataloader):
         self.model.eval()
@@ -46,7 +39,7 @@ class Trainer(object):
                 output = self.model(data, target, teacher_forcing_ratio=0.)
                 if self.args.real_value:
                     label = self.scaler.inverse_transform(label)
-                loss = self.loss(output.cuda(), label)
+                loss = self.loss(output, label)
                 #a whole batch of Metr_LA is filtered
                 if not torch.isnan(loss):
                     total_val_loss += loss.item()
@@ -84,8 +77,8 @@ class Trainer(object):
 
             #log information
             if batch_idx % self.args.log_step == 0:
-                self.logger.info('Train Epoch {}: {}/{} Loss: {:.6f}'.format(
-                    epoch, batch_idx, self.train_per_epoch, loss.item()))
+                self.logger.info('Train Epoch {}/{}: {}/{} Loss: {:.6f}'.format(
+                    epoch, self.args.epochs, batch_idx, self.train_per_epoch, loss.item()))
         train_epoch_loss = total_loss/self.train_per_epoch
         self.logger.info('**********Train Epoch {}: averaged Loss: {:.6f}, tf_ratio: {:.6f}'.format(epoch, train_epoch_loss, teacher_forcing_ratio))
 
@@ -183,8 +176,8 @@ class Trainer(object):
             y_pred = torch.cat(y_pred, dim=0)
         else:
             y_pred = scaler.inverse_transform(torch.cat(y_pred, dim=0))
-        np.save('./{}_true.npy'.format(args.dataset), y_true.cpu().numpy())
-        np.save('./{}_pred.npy'.format(args.dataset), y_pred.cpu().numpy())
+        #np.save('./{}_true.npy'.format(args.dataset), y_true.cpu().numpy())
+        #np.save('./{}_pred.npy'.format(args.dataset), y_pred.cpu().numpy())
         for t in range(y_true.shape[1]):
             mae, rmse, mape, _, _ = All_Metrics(y_pred[:, t, ...], y_true[:, t, ...],
                                                 args.mae_thresh, args.mape_thresh)

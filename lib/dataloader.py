@@ -5,7 +5,7 @@ from lib.add_window import Add_Window_Horizon
 from lib.load_dataset import load_st_dataset
 from lib.normalization import NScaler, MinMax01Scaler, MinMax11Scaler, StandardScaler, ColumnMinMaxScaler
 
-def normalize_dataset(data, normalizer, column_wise=False):
+def normalize_dataset(data, normalizer, logger, column_wise=False):
     if normalizer == 'max01':
         if column_wise:
             minimum = data.min(axis=0, keepdims=True)
@@ -15,7 +15,7 @@ def normalize_dataset(data, normalizer, column_wise=False):
             maximum = data.max()
         scaler = MinMax01Scaler(minimum, maximum)
         data = scaler.transform(data)
-        print('Normalize the dataset by MinMax01 Normalization')
+        logger.info('Normalize the dataset by MinMax01 Normalization')
     elif normalizer == 'max11':
         if column_wise:
             minimum = data.min(axis=0, keepdims=True)
@@ -25,7 +25,7 @@ def normalize_dataset(data, normalizer, column_wise=False):
             maximum = data.max()
         scaler = MinMax11Scaler(minimum, maximum)
         data = scaler.transform(data)
-        print('Normalize the dataset by MinMax11 Normalization')
+        logger.info('Normalize the dataset by MinMax11 Normalization')
     elif normalizer == 'std':
         if column_wise:
             mean = data.mean(axis=0, keepdims=True)
@@ -35,17 +35,17 @@ def normalize_dataset(data, normalizer, column_wise=False):
             std = data.std()
         scaler = StandardScaler(mean, std)
         data = scaler.transform(data)
-        print('Normalize the dataset by Standard Normalization')
+        logger.info('Normalize the dataset by Standard Normalization')
     elif normalizer == 'None':
         scaler = NScaler()
         data = scaler.transform(data)
-        print('Does not normalize the dataset')
+        logger.info('Does not normalize the dataset')
     elif normalizer == 'cmax':
         #column min max, to be depressed
         #note: axis must be the spatial dimension, please check !
         scaler = ColumnMinMaxScaler(data.min(axis=0), data.max(axis=0))
         data = scaler.transform(data)
-        print('Normalize the dataset by Column Min-Max Normalization')
+        logger.info('Normalize the dataset by Column Min-Max Normalization')
     else:
         raise ValueError
     return data, scaler
@@ -71,21 +71,20 @@ def split_data_by_ratio(data, val_ratio, test_ratio):
     train_data = data[:-int(data_len*(test_ratio+val_ratio))]
     return train_data, val_data, test_data
 
-def data_loader(X, Y, batch_size, shuffle=True, drop_last=True):
-    cuda = True if torch.cuda.is_available() else False
-    TensorFloat = torch.cuda.FloatTensor if cuda else torch.FloatTensor
-    X, Y = TensorFloat(X), TensorFloat(Y)
+def data_loader(X, Y, batch_size, device, shuffle=True, drop_last=True):
+    TensorFloat = torch.FloatTensor
+    X, Y = TensorFloat(X).to(device), TensorFloat(Y).to(device)
     data = torch.utils.data.TensorDataset(X, Y)
     dataloader = torch.utils.data.DataLoader(data, batch_size=batch_size,
                                              shuffle=shuffle, drop_last=drop_last)
     return dataloader
 
 
-def get_dataloader(args, normalizer = 'std', tod=False, dow=False, weather=False, single=True):
+def get_dataloader(args, logger, normalizer = 'std', tod=False, dow=False, weather=False, single=True):
     #load raw st dataset
-    data = load_st_dataset(args.dataset)        # B, N, D
+    data = load_st_dataset(args.dataset, logger)        # B, N, D
     #normalize st data
-    data, scaler = normalize_dataset(data, normalizer, args.column_wise)
+    data, scaler = normalize_dataset(data, normalizer, logger, args.column_wise)
     #spilit dataset by days or by ratio
     if args.test_ratio > 1:
         data_train, data_val, data_test = split_data_by_days(data, args.val_ratio, args.test_ratio)
@@ -95,16 +94,16 @@ def get_dataloader(args, normalizer = 'std', tod=False, dow=False, weather=False
     x_tra, y_tra = Add_Window_Horizon(data_train, args.lag, args.horizon, single)
     x_val, y_val = Add_Window_Horizon(data_val, args.lag, args.horizon, single)
     x_test, y_test = Add_Window_Horizon(data_test, args.lag, args.horizon, single)
-    print('Train: ', x_tra.shape, y_tra.shape)
-    print('Val: ', x_val.shape, y_val.shape)
-    print('Test: ', x_test.shape, y_test.shape)
+    logger.info('Train: {},{}'.format(x_tra.shape, y_tra.shape))
+    logger.info('Val: {},{}'.format(x_val.shape, y_val.shape))
+    logger.info('Test: {},{}'.format(x_test.shape, y_test.shape))
     ##############get dataloader######################
-    train_dataloader = data_loader(x_tra, y_tra, args.batch_size, shuffle=True, drop_last=True)
+    train_dataloader = data_loader(x_tra, y_tra, args.batch_size, args.device, shuffle=True, drop_last=True)
     if len(x_val) == 0:
         val_dataloader = None
     else:
-        val_dataloader = data_loader(x_val, y_val, args.batch_size, shuffle=False, drop_last=True)
-    test_dataloader = data_loader(x_test, y_test, args.batch_size, shuffle=False, drop_last=False)
+        val_dataloader = data_loader(x_val, y_val, args.batch_size, args.device, shuffle=False, drop_last=True)
+    test_dataloader = data_loader(x_test, y_test, args.batch_size, args.device, shuffle=False, drop_last=False)
     return train_dataloader, val_dataloader, test_dataloader, scaler
 
 
